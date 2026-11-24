@@ -1,5 +1,9 @@
 
 import pandas as pd
+
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion
 from sklearn.linear_model import LogisticRegression
@@ -120,6 +124,17 @@ def load_pool(path, name):
 part1 = load_pool(PART1_PATH, "Part 1")
 part2 = load_pool(PART2_PATH, "Part 2")
 
+print("\n========== DATASET COLUMNS ==========")
+
+print("Official columns:")
+print(official.columns.tolist())
+
+print("\nPart 1 columns:")
+print(part1.columns.tolist())
+
+print("\nPart 2 columns:")
+print(part2.columns.tolist())
+
 # 4. 排除與官方驗證集完全相同的回答
 validation_texts = set(official_val["text"])
 
@@ -218,6 +233,71 @@ def train_and_evaluate(name, train_data):
     model.fit(X_train_vec, y_train)
 
     predictions = model.predict(X_val_vec)
+
+    # 建立混淆矩陣
+    cm = confusion_matrix(
+    y_val,
+    predictions,
+    labels=classes
+
+    )
+    # 儲存混淆矩陣 CSV
+    cm_df = pd.DataFrame(
+        cm,
+        index=classes,
+        columns=classes
+    )
+
+    cm_df.to_csv(
+        f"confusion_matrix_{name}.csv",
+        encoding="utf-8-sig"
+    )
+
+    # 繪製混淆矩陣
+    fig, ax = plt.subplots(figsize=(16, 13))
+
+    image = ax.imshow(cm, interpolation="nearest")
+
+    ax.set_title(f"Confusion Matrix - {name}")
+    ax.set_xlabel("Predicted Model")
+    ax.set_ylabel("Actual Model")
+
+    ax.set_xticks(range(len(classes)))
+    ax.set_yticks(range(len(classes)))
+
+    ax.set_xticklabels(
+        classes,
+        rotation=90,
+        fontsize=8
+    )
+
+    ax.set_yticklabels(
+        classes,
+        fontsize=8
+    )
+
+    fig.colorbar(image, ax=ax)
+
+    # 在格子內顯示數量
+    for i in range(len(classes)):
+        for j in range(len(classes)):
+            ax.text(
+                j, i, str(cm[i, j]),
+                ha="center",
+                va="center",
+                fontsize=7
+            )
+
+    fig.tight_layout()
+
+    fig.savefig(
+        f"confusion_matrix_{name}.png",
+        dpi=200
+    )
+
+    plt.close(fig)
+
+    print(f"混淆矩陣已儲存：confusion_matrix_{name}.png")
 
     ba = balanced_accuracy_score(y_val, predictions)
     acc = accuracy_score(y_val, predictions)
